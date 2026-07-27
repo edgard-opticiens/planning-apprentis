@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Envoyer le planning apprentis au RH</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#152238;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;padding:20px}
+  .card{width:100%;max-width:440px;background:#fffbf8;border-radius:16px;
+        box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden}
+  .head{background:#152238;padding:22px 26px;border-bottom:3px solid #A97A2E}
+  .head h1{color:#fff;font-size:18px;font-weight:700}
+  .head p{color:#c9b78e;font-size:13px;margin-top:4px}
+  .body{padding:24px 26px}
+  label{display:block;font-size:13px;color:#55505e;margin:0 0 5px;font-weight:600}
+  input,select{width:100%;padding:11px;border:1px solid #d9cdbf;border-radius:8px;font-size:15px;background:#fff}
+  input:focus,select:focus{outline:none;border-color:#A97A2E}
+  #pin{letter-spacing:6px;text-align:center;font-weight:700;font-size:20px}
+  .mag{min-height:20px;margin:8px 0 16px;font-size:14px;font-weight:600}
+  .field{margin-bottom:16px}
+  button{width:100%;padding:13px;border:0;border-radius:8px;background:#A97A2E;color:#fff;
+         font-weight:700;font-size:15px;cursor:pointer;transition:opacity .15s}
+  button:hover:not(:disabled){opacity:.9}
+  button:disabled{background:#cbb98f;cursor:not-allowed}
+  .msg{margin-top:14px;font-size:14px;min-height:20px;text-align:center;font-weight:600}
+  .note{margin-top:18px;font-size:11.5px;color:#8a8290;line-height:1.5;text-align:center}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <h1>Envoyer le planning des apprentis au RH</h1>
+      <p>Saisissez votre code magasin, choisissez le mois, puis envoyez.</p>
+    </div>
+    <div class="body">
+      <div class="field">
+        <label for="pin">Code magasin (PIN à 4 chiffres)</label>
+        <input id="pin" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" oninput="resoudre()">
+        <div class="mag" id="mag"></div>
+      </div>
+      <div class="field">
+        <label for="mois">Mois concerné</label>
+        <select id="mois">
+          <option value="06">Juin 2026</option><option value="07">Juillet 2026</option>
+          <option value="08">Août 2026</option><option value="09">Septembre 2026</option>
+          <option value="10">Octobre 2026</option><option value="11">Novembre 2026</option>
+          <option value="12">Décembre 2026</option>
+        </select>
+      </div>
+      <button id="envoyer" onclick="envoyer()" disabled>Envoyer au RH</button>
+      <div class="msg" id="msg"></div>
+      <div class="note">L'envoi transmet votre fichier de planning complet au service RH.
+        Accès protégé par la connexion Office 365.</div>
+    </div>
+  </div>
+
+<script>
+const WEBHOOK = "https://edgard-opticiens.app.n8n.cloud/webhook/envoi-planning-rh";
+const TOKEN   = "edgard-planning-2026-xY7q9K";
+const PINS = {
+  "3653":"ANGO","8837":"BIARRO","6864":"BORDO","5078":"CAENPO","7935":"GIRO","5194":"HAVRO",
+  "7152":"JISAM","7411":"LYONO","5142":"MANSO","2406":"MARSEILLO","2946":"NANCEO","8694":"NANTO",
+  "5986":"NICEO","4726":"ORLO","6920":"REIMO","2749":"STRABO","6750":"TURO",
+  "6007":"CHATO","3795":"CHEMILLO","9213":"CHOLO","8843":"DUNES","3087":"ECUME","7930":"FORMIO",
+  "1165":"MARAIS","7779":"MUDO","5785":"NIORTO"
+};
+
+function resoudre(){
+  const pin=document.getElementById('pin').value.trim();
+  const mag=document.getElementById('mag'), btn=document.getElementById('envoyer');
+  const m=PINS[pin];
+  if(m){ mag.textContent="Magasin : "+m; mag.style.color="#2e7d32"; btn.disabled=false; }
+  else { mag.textContent = pin.length===4 ? "Code inconnu." : ""; mag.style.color="#c62828"; btn.disabled=true; }
+}
+
+async function envoyer(){
+  const btn=document.getElementById('envoyer'), msg=document.getElementById('msg');
+  const magasin=PINS[document.getElementById('pin').value.trim()];
+  const mois=document.getElementById('mois').value;
+  if(!magasin) return;
+  btn.disabled=true; msg.textContent="Envoi en cours…"; msg.style.color="#55505e";
+  try{
+    const res=await fetch(WEBHOOK,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ magasin, mois, token:TOKEN })});
+    if(res.ok){ msg.textContent="✓ Planning envoyé au RH."; msg.style.color="#2e7d32"; }
+    else if(res.status===401){ msg.textContent="Accès refusé."; msg.style.color="#c62828"; btn.disabled=false; }
+    else { const d=await res.json().catch(()=>({})); msg.textContent=(d.message||"Erreur lors de l'envoi."); msg.style.color="#c62828"; btn.disabled=false; }
+  }catch(e){ msg.textContent="Erreur réseau — réessayez."; msg.style.color="#c62828"; btn.disabled=false; }
+}
+</script>
+</body>
+</html>
