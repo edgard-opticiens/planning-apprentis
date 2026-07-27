@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Envoyer le planning apprentis au RH</title>
+<title>Planning apprentis</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{min-height:100vh;display:flex;align-items:center;justify-content:center;
        background:#152238;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;padding:20px}
-  .card{width:100%;max-width:440px;background:#fffbf8;border-radius:16px;
+  .card{width:100%;max-width:460px;background:#fffbf8;border-radius:16px;
         box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden}
   .head{background:#152238;padding:22px 26px;border-bottom:3px solid #A97A2E}
   .head h1{color:#fff;font-size:18px;font-weight:700}
@@ -18,21 +18,29 @@
   input,select{width:100%;padding:11px;border:1px solid #d9cdbf;border-radius:8px;font-size:15px;background:#fff}
   input:focus,select:focus{outline:none;border-color:#A97A2E}
   #pin{letter-spacing:6px;text-align:center;font-weight:700;font-size:20px}
-  .mag{min-height:20px;margin:8px 0 16px;font-size:14px;font-weight:600}
+  .mag{min-height:20px;margin:8px 0 0;font-size:14px;font-weight:600}
   .field{margin-bottom:16px}
-  button{width:100%;padding:13px;border:0;border-radius:8px;background:#A97A2E;color:#fff;
-         font-weight:700;font-size:15px;cursor:pointer;transition:opacity .15s}
-  button:hover:not(:disabled){opacity:.9}
+  .steps{margin-top:8px;border-top:1px solid #eaded2;padding-top:18px;opacity:.45;pointer-events:none;transition:opacity .2s}
+  .steps.on{opacity:1;pointer-events:auto}
+  .step{margin-bottom:18px}
+  .step .t{font-size:13px;color:#9c4f38;font-weight:700;margin-bottom:8px}
+  button,.btn{width:100%;padding:13px;border:0;border-radius:8px;font-weight:700;font-size:15px;
+        cursor:pointer;transition:opacity .15s;display:block;text-align:center;text-decoration:none}
+  .open{background:#152238;color:#fff}
+  .send{background:#A97A2E;color:#fff}
+  button:hover:not(:disabled),.open:hover{opacity:.9}
   button:disabled{background:#cbb98f;cursor:not-allowed}
-  .msg{margin-top:14px;font-size:14px;min-height:20px;text-align:center;font-weight:600}
-  .note{margin-top:18px;font-size:11.5px;color:#8a8290;line-height:1.5;text-align:center}
+  .open.dis{background:#b9b2ba;cursor:not-allowed;pointer-events:none}
+  .row-mois{margin-bottom:10px}
+  .msg{margin-top:12px;font-size:14px;min-height:20px;text-align:center;font-weight:600}
+  .note{margin-top:16px;font-size:11.5px;color:#8a8290;line-height:1.5;text-align:center}
 </style>
 </head>
 <body>
   <div class="card">
     <div class="head">
-      <h1>Envoyer le planning des apprentis au RH</h1>
-      <p>Saisissez votre code magasin, choisissez le mois, puis envoyez.</p>
+      <h1>Planning des apprentis</h1>
+      <p>Complétez votre planning, puis envoyez-le au service RH.</p>
     </div>
     <div class="body">
       <div class="field">
@@ -40,25 +48,36 @@
         <input id="pin" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" oninput="resoudre()">
         <div class="mag" id="mag"></div>
       </div>
-      <div class="field">
-        <label for="mois">Mois concerné</label>
-        <select id="mois">
-          <option value="06">Juin 2026</option><option value="07">Juillet 2026</option>
-          <option value="08">Août 2026</option><option value="09">Septembre 2026</option>
-          <option value="10">Octobre 2026</option><option value="11">Novembre 2026</option>
-          <option value="12">Décembre 2026</option>
-        </select>
+
+      <div class="steps" id="steps">
+        <div class="step">
+          <div class="t">1. Compléter mon planning</div>
+          <a id="btn-open" class="open dis" target="_blank" rel="noopener">Ouvrir mon planning (Excel)</a>
+        </div>
+        <div class="step">
+          <div class="t">2. Envoyer au RH</div>
+          <div class="row-mois">
+            <select id="mois">
+              <option value="06">Juin 2026</option><option value="07">Juillet 2026</option>
+              <option value="08">Août 2026</option><option value="09">Septembre 2026</option>
+              <option value="10">Octobre 2026</option><option value="11">Novembre 2026</option>
+              <option value="12">Décembre 2026</option>
+            </select>
+          </div>
+          <button id="btn-send" class="send" onclick="envoyer()">Envoyer au RH</button>
+        </div>
+        <div class="msg" id="msg"></div>
       </div>
-      <button id="envoyer" onclick="envoyer()" disabled>Envoyer au RH</button>
-      <div class="msg" id="msg"></div>
-      <div class="note">L'envoi transmet votre fichier de planning complet au service RH.
-        Accès protégé par la connexion Office 365.</div>
+
+      <div class="note">Accès protégé par la connexion Office 365. L'envoi transmet votre fichier complet au service RH.</div>
     </div>
   </div>
 
 <script>
 const WEBHOOK = "https://edgard-opticiens.app.n8n.cloud/webhook/envoi-planning-rh";
 const TOKEN   = "edgard-planning-2026-xY7q9K";
+
+// PIN -> code magasin (identique à Variables de paie)
 const PINS = {
   "3653":"ANGO","8837":"BIARRO","6864":"BORDO","5078":"CAENPO","7935":"GIRO","5194":"HAVRO",
   "7152":"JISAM","7411":"LYONO","5142":"MANSO","2406":"MARSEILLO","2946":"NANCEO","8694":"NANTO",
@@ -67,16 +86,38 @@ const PINS = {
   "1165":"MARAIS","7779":"MUDO","5785":"NIORTO"
 };
 
+// code magasin -> lien Excel Online (à compléter au fur et à mesure des partages)
+const LIENS = {
+  "ANGO":  "https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7B12D80A42-25B9-4E2E-BD3D-70E2CB3C0191%7D&file=ANGO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true",
+  "CAENPO":"https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7B46E554BE-688F-43DA-9E83-D13B72F28BA4%7D&file=CAENPO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true",
+  "HAVRO": "https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7B0F584A76-88DA-4A2C-86B6-BEB0CC4F5B74%7D&file=HAVRO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true",
+  "MANSO": "https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7BA9E7A172-C06F-4E94-9E3A-7D05499C9970%7D&file=MANSO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true",
+  "MARSEILLO":"https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7BA1CEB327-BE3E-459F-B85A-A8159C094117%7D&file=MARSEILLO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true",
+  "NICEO": "https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7B48EA77D3-EBA9-4939-971E-0D0EB5EC3E8C%7D&file=NICEO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true",
+  "REIMO": "https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7B6BD10921-8D0B-4483-A6A9-E3DA78E7634A%7D&file=REIMO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true",
+  "TURO":  "https://atheo-my.sharepoint.com/:x:/r/personal/j_boisseau_groupe-edgard_com/_layouts/15/Doc.aspx?sourcedoc=%7BBB16AD69-B032-463D-B381-7EDAA920E9BC%7D&file=TURO-Planning%20apprentis%202026.xlsx&action=default&mobileredirect=true"
+  // ,"BIARRO":"https://…"   ← ajouter ici les autres au fur et à mesure
+};
+
 function resoudre(){
   const pin=document.getElementById('pin').value.trim();
-  const mag=document.getElementById('mag'), btn=document.getElementById('envoyer');
-  const m=PINS[pin];
-  if(m){ mag.textContent="Magasin : "+m; mag.style.color="#2e7d32"; btn.disabled=false; }
-  else { mag.textContent = pin.length===4 ? "Code inconnu." : ""; mag.style.color="#c62828"; btn.disabled=true; }
+  const mag=document.getElementById('mag'), steps=document.getElementById('steps');
+  const open=document.getElementById('btn-open'), send=document.getElementById('btn-send');
+  const code=PINS[pin];
+  document.getElementById('msg').textContent="";
+  if(code){
+    mag.textContent="Magasin : "+code; mag.style.color="#2e7d32";
+    steps.classList.add('on'); send.disabled=false;
+    if(LIENS[code]){ open.href=LIENS[code]; open.classList.remove('dis'); open.textContent="Ouvrir mon planning (Excel)"; }
+    else { open.removeAttribute('href'); open.classList.add('dis'); open.textContent="Lien pas encore disponible"; }
+  } else {
+    mag.textContent = pin.length===4 ? "Code inconnu." : ""; mag.style.color="#c62828";
+    steps.classList.remove('on'); send.disabled=true;
+  }
 }
 
 async function envoyer(){
-  const btn=document.getElementById('envoyer'), msg=document.getElementById('msg');
+  const btn=document.getElementById('btn-send'), msg=document.getElementById('msg');
   const magasin=PINS[document.getElementById('pin').value.trim()];
   const mois=document.getElementById('mois').value;
   if(!magasin) return;
