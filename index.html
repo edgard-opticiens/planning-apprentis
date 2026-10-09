@@ -84,8 +84,8 @@
           </select>
         </div>
         <div class="field">
-          <label for="code">Code directeur (6 chiffres)</label>
-          <input id="code" type="text" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="off">
+          <label for="code">Code directeur (8 caractères)</label>
+          <input id="code" type="text" maxlength="8" placeholder="••••••••" autocomplete="off" style="text-transform:uppercase">
         </div>
         <button type="button" class="login" id="btn-login" onclick="connexion()">Se connecter</button>
         <div class="login-msg" id="login-msg"></div>
@@ -121,20 +121,20 @@
 
 <script>
 const BASE = "https://edgard-opticiens.app.n8n.cloud/webhook/";
-const STORAGE_KEY = "edgard_session_planning_apprentis";
+const DIR_KEY = "edgard_session_directeur_v1";
 
 function session(){
   try{
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if(s && s.token && s.magasin && Number(s.expire) > Date.now()) return s;
+    const s = JSON.parse(localStorage.getItem(DIR_KEY) || "null");
+    if(s && s.token && s.role === 'DIR' && s.magasin && Number(s.expire) > Date.now()) return s;
   }catch(e){}
   return null;
 }
 function enregistrerSession(s){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }catch(e){}
+  try{ localStorage.setItem(DIR_KEY, JSON.stringify(s)); }catch(e){}
 }
 function effacerSession(){
-  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  try{ localStorage.removeItem(DIR_KEY); }catch(e){}
 }
 
 function afficherConnecte(magasin){
@@ -162,14 +162,14 @@ async function connexion(){
   const btn = document.getElementById('btn-login'), msg = document.getElementById('login-msg');
   msg.textContent = ""; msg.style.color = "#55505e";
   if(!magasin){ msg.textContent = "Choisissez votre magasin."; msg.style.color = "#c62828"; return; }
-  if(!/^\d{6}$/.test(code)){ msg.textContent = "Le code directeur fait 6 chiffres."; msg.style.color = "#c62828"; return; }
+  if(!/^[A-Za-z0-9]{8}$/.test(code)){ msg.textContent = "Le code directeur fait 8 caractères (lettres et chiffres)."; msg.style.color = "#c62828"; return; }
   btn.disabled = true; msg.textContent = "Connexion en cours…";
   try{
     const res = await fetch(BASE + "auth-login", { method: "POST", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ role: "DIR", magasin, code }) });
     const d = await res.json().catch(()=>({}));
     if(d && d.ok){
-      enregistrerSession({ token: d.token, magasin: d.magasin, expire: d.expire });
+      enregistrerSession({ token: d.token, role: "DIR", magasin: d.magasin, expire: d.expire });
       msg.textContent = "";
       afficherConnecte(d.magasin);
       chargerPlanning();
