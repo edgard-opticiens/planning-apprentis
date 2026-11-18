@@ -18,6 +18,7 @@
   input,select{width:100%;padding:11px;border:1px solid #d9cdbf;border-radius:8px;font-size:15px;background:#fff}
   input:focus,select:focus{outline:none;border-color:#A97A2E}
   #code{letter-spacing:4px;text-align:center;font-weight:700;font-size:18px}
+  .hint{font-size:12px;color:#8a8290;margin-top:5px}
   .field{margin-bottom:16px}
   .two{display:flex;gap:12px}.two>div{flex:1}
   button,.btn{width:100%;padding:13px;border:0;border-radius:8px;font-weight:700;font-size:15px;
@@ -42,7 +43,7 @@
   <div class="card">
     <div class="head">
       <h1>Planning des apprentis</h1>
-      <p>Connectez-vous, complétez votre planning, puis envoyez-le au service RH.</p>
+      <p>Connectez-vous avec le code de votre magasin, complétez le planning, puis envoyez-le au RH.</p>
     </div>
     <div class="body">
 
@@ -53,8 +54,9 @@
           <select id="magasin"></select>
         </div>
         <div class="field">
-          <label for="code">Code directeur</label>
-          <input id="code" type="text" inputmode="numeric" autocomplete="off" placeholder="Votre code">
+          <label for="code">Code magasin</label>
+          <input id="code" type="text" inputmode="numeric" autocomplete="off" placeholder="Code magasin à 6 chiffres">
+          <div class="hint">Le code magasin partagé (le même que Soldes CP / Variables de paie), pas le code directeur.</div>
         </div>
         <button id="btn-login" class="login" onclick="connexion()">Se connecter</button>
         <div class="msg" id="msg-login"></div>
@@ -97,7 +99,7 @@
         <div class="msg" id="msg"></div>
       </div>
 
-      <div class="note">Accès protégé par votre code magasin (connexion sécurisée). L'envoi transmet votre fichier complet au service RH.</div>
+      <div class="note">Accès protégé par le code de votre magasin. L'envoi transmet votre fichier complet au service RH.</div>
     </div>
   </div>
 
@@ -109,15 +111,12 @@ const MAGASINS = ["ANGO","BIARRO","BORDO","CAENPO","GIRO","HAVRO","JISAM","LYONO
 const CLE = "planning_session";
 let SESSION = null;
 
-// init
 (function(){
   const s=document.getElementById('magasin');
   s.insertAdjacentHTML('beforeend','<option value="">— Choisir —</option>');
   MAGASINS.forEach(c=>s.insertAdjacentHTML('beforeend',`<option value="${c}">${c}</option>`));
-  // année courante par défaut
   const y=String(new Date().getFullYear()), ya=document.getElementById('annee');
   if([...ya.options].some(o=>o.value===y)) ya.value=y;
-  // session mémorisée ?
   try{
     const raw=localStorage.getItem(CLE);
     if(raw){ const o=JSON.parse(raw); if(o && o.token && Number(o.expire)>Date.now()){ SESSION=o; montrerPlanning(); } }
@@ -142,11 +141,11 @@ async function connexion(){
   const magasin=document.getElementById('magasin').value;
   const code=document.getElementById('code').value.trim();
   if(!magasin){ msg.textContent="Choisissez votre magasin."; msg.style.color="#c62828"; return; }
-  if(!code){ msg.textContent="Saisissez votre code."; msg.style.color="#c62828"; return; }
+  if(!code){ msg.textContent="Saisissez le code magasin."; msg.style.color="#c62828"; return; }
   btn.disabled=true; msg.textContent="Connexion…"; msg.style.color="#55505e";
   try{
     const res=await fetch(AUTH_URL,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ role:"DIR", magasin, code })});
+      body:JSON.stringify({ role:"COLLAB", magasin, code })});
     const d=await res.json().catch(()=>({}));
     if(d && d.ok){
       SESSION={ token:d.token, magasin:d.magasin, expire:d.expire };
@@ -155,7 +154,7 @@ async function connexion(){
     } else if(d && d.error==="verrouille"){
       msg.textContent="Trop d'essais. Réessayez dans "+(d.minutes||15)+" min."; msg.style.color="#c62828";
     } else {
-      msg.textContent="Magasin ou code incorrect."; msg.style.color="#c62828";
+      msg.textContent="Magasin ou code magasin incorrect."; msg.style.color="#c62828";
     }
   }catch(e){ msg.textContent="Erreur réseau — réessayez."; msg.style.color="#c62828"; }
   finally{ btn.disabled=false; }
