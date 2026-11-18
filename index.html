@@ -17,59 +17,75 @@
   label{display:block;font-size:13px;color:#55505e;margin:0 0 5px;font-weight:600}
   input,select{width:100%;padding:11px;border:1px solid #d9cdbf;border-radius:8px;font-size:15px;background:#fff}
   input:focus,select:focus{outline:none;border-color:#A97A2E}
-  #pin{letter-spacing:6px;text-align:center;font-weight:700;font-size:20px}
-  .mag{min-height:20px;margin:8px 0 0;font-size:14px;font-weight:600}
+  #code{letter-spacing:4px;text-align:center;font-weight:700;font-size:18px}
   .field{margin-bottom:16px}
   .two{display:flex;gap:12px}.two>div{flex:1}
-  .steps{margin-top:8px;border-top:1px solid #eaded2;padding-top:18px;opacity:.45;pointer-events:none;transition:opacity .2s}
-  .steps.on{opacity:1;pointer-events:auto}
-  .step{margin-bottom:18px}
-  .step .t{font-size:13px;color:#9c4f38;font-weight:700;margin-bottom:8px}
   button,.btn{width:100%;padding:13px;border:0;border-radius:8px;font-weight:700;font-size:15px;
         cursor:pointer;transition:opacity .15s;display:block;text-align:center;text-decoration:none}
   .open{background:#152238;color:#fff}
   .send{background:#A97A2E;color:#fff}
+  .login{background:#A97A2E;color:#fff}
   button:hover:not(:disabled),.open:hover{opacity:.9}
   button:disabled{background:#cbb98f;cursor:not-allowed}
+  .step{margin-bottom:18px}
+  .step .t{font-size:13px;color:#9c4f38;font-weight:700;margin-bottom:8px}
+  .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;
+       padding-bottom:12px;border-bottom:1px solid #eaded2}
+  .bar b{color:#2e7d32;font-size:14px}
+  .bar a{font-size:12px;color:#9c4f38;cursor:pointer;text-decoration:underline}
   .msg{margin-top:12px;font-size:14px;min-height:20px;text-align:center;font-weight:600}
   .note{margin-top:16px;font-size:11.5px;color:#8a8290;line-height:1.5;text-align:center}
+  .hidden{display:none}
 </style>
 </head>
 <body>
   <div class="card">
     <div class="head">
       <h1>Planning des apprentis</h1>
-      <p>Complétez votre planning, puis envoyez-le au service RH.</p>
+      <p>Connectez-vous, complétez votre planning, puis envoyez-le au service RH.</p>
     </div>
     <div class="body">
-      <div class="field">
-        <label for="pin">Code magasin (PIN à 4 chiffres)</label>
-        <input id="pin" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" oninput="resoudre()">
-        <div class="mag" id="mag"></div>
-      </div>
 
-      <div class="two">
+      <!-- VUE CONNEXION -->
+      <div id="vue-login">
         <div class="field">
-          <label for="annee">Année</label>
-          <select id="annee" onchange="majOuvrir()">
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
+          <label for="magasin">Magasin</label>
+          <select id="magasin"></select>
         </div>
         <div class="field">
-          <label for="mois">Mois concerné</label>
-          <select id="mois">
-            <option value="01">Janvier</option><option value="02">Février</option>
-            <option value="03">Mars</option><option value="04">Avril</option>
-            <option value="05">Mai</option><option value="06">Juin</option>
-            <option value="07">Juillet</option><option value="08">Août</option>
-            <option value="09">Septembre</option><option value="10">Octobre</option>
-            <option value="11">Novembre</option><option value="12">Décembre</option>
-          </select>
+          <label for="code">Code directeur</label>
+          <input id="code" type="text" inputmode="numeric" autocomplete="off" placeholder="Votre code">
         </div>
+        <button id="btn-login" class="login" onclick="connexion()">Se connecter</button>
+        <div class="msg" id="msg-login"></div>
       </div>
 
-      <div class="steps" id="steps">
+      <!-- VUE PLANNING (après connexion) -->
+      <div id="vue-planning" class="hidden">
+        <div class="bar">
+          <b id="qui"></b>
+          <a onclick="deconnexion()">Se déconnecter</a>
+        </div>
+        <div class="two">
+          <div class="field">
+            <label for="annee">Année</label>
+            <select id="annee" onchange="majOuvrir()">
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="mois">Mois concerné</label>
+            <select id="mois">
+              <option value="01">Janvier</option><option value="02">Février</option>
+              <option value="03">Mars</option><option value="04">Avril</option>
+              <option value="05">Mai</option><option value="06">Juin</option>
+              <option value="07">Juillet</option><option value="08">Août</option>
+              <option value="09">Septembre</option><option value="10">Octobre</option>
+              <option value="11">Novembre</option><option value="12">Décembre</option>
+            </select>
+          </div>
+        </div>
         <div class="step">
           <div class="t">1. Compléter mon planning</div>
           <a id="btn-open" class="open" target="_blank" rel="noopener">Ouvrir mon planning (Excel)</a>
@@ -81,70 +97,96 @@
         <div class="msg" id="msg"></div>
       </div>
 
-      <div class="note">Accès protégé par la connexion Office 365. L'envoi transmet votre fichier complet au service RH.</div>
+      <div class="note">Accès protégé par votre code magasin (connexion sécurisée). L'envoi transmet votre fichier complet au service RH.</div>
     </div>
   </div>
 
 <script>
-const WEBHOOK = "https://edgard-opticiens.app.n8n.cloud/webhook/envoi-planning-rh";
-const TOKEN   = "edgard-planning-2026-xY7q9K";
-// Base du dossier OneDrive (année-agnostique : l'adresse du fichier est construite automatiquement)
+const AUTH_URL = "https://edgard-opticiens.app.n8n.cloud/webhook/auth-login";
+const SEND_URL = "https://edgard-opticiens.app.n8n.cloud/webhook/envoi-planning-rh";
 const ONEDRIVE_BASE = "https://atheo-my.sharepoint.com/personal/j_boisseau_groupe-edgard_com/Documents/Planning%20apprentis/";
+const MAGASINS = ["ANGO","BIARRO","BORDO","CAENPO","GIRO","HAVRO","JISAM","LYONO","MANSO","MARSEILLO","NANCEO","NANTO","NICEO","ORLO","REIMO","STRABO","TURO","CHATO","CHEMILLO","CHOLO","DUNES","ECUME","FORMIO","MARAIS","MUDO","NIORTO"];
+const CLE = "planning_session";
+let SESSION = null;
 
-// PIN -> code magasin (identique à Variables de paie)
-const PINS = {
-  "3653":"ANGO","8837":"BIARRO","6864":"BORDO","5078":"CAENPO","7935":"GIRO","5194":"HAVRO",
-  "7152":"JISAM","7411":"LYONO","5142":"MANSO","2406":"MARSEILLO","2946":"NANCEO","8694":"NANTO",
-  "5986":"NICEO","4726":"ORLO","6920":"REIMO","2749":"STRABO","6750":"TURO",
-  "6007":"CHATO","3795":"CHEMILLO","9213":"CHOLO","8843":"DUNES","3087":"ECUME","7930":"FORMIO",
-  "1165":"MARAIS","7779":"MUDO","5785":"NIORTO"
-};
+// init
+(function(){
+  const s=document.getElementById('magasin');
+  s.insertAdjacentHTML('beforeend','<option value="">— Choisir —</option>');
+  MAGASINS.forEach(c=>s.insertAdjacentHTML('beforeend',`<option value="${c}">${c}</option>`));
+  // année courante par défaut
+  const y=String(new Date().getFullYear()), ya=document.getElementById('annee');
+  if([...ya.options].some(o=>o.value===y)) ya.value=y;
+  // session mémorisée ?
+  try{
+    const raw=localStorage.getItem(CLE);
+    if(raw){ const o=JSON.parse(raw); if(o && o.token && Number(o.expire)>Date.now()){ SESSION=o; montrerPlanning(); } }
+  }catch(e){}
+})();
 
-// par défaut : l'année courante si elle est proposée
-window.addEventListener('DOMContentLoaded',()=>{
-  const y=String(new Date().getFullYear()), s=document.getElementById('annee');
-  if([...s.options].some(o=>o.value===y)) s.value=y;
-});
-
-function codeCourant(){ return PINS[document.getElementById('pin').value.trim()]; }
-
-function majOuvrir(){
-  const code=codeCourant(), open=document.getElementById('btn-open');
-  if(!code){ return; }
-  const annee=document.getElementById('annee').value;
-  const fichier=`${code}-Planning apprentis ${annee}.xlsx`;
-  open.href=ONEDRIVE_BASE+encodeURIComponent(fichier)+"?web=1";
+function montrerPlanning(){
+  document.getElementById('vue-login').classList.add('hidden');
+  document.getElementById('vue-planning').classList.remove('hidden');
+  document.getElementById('qui').textContent="Magasin : "+SESSION.magasin;
+  majOuvrir();
+}
+function deconnexion(){
+  SESSION=null; try{localStorage.removeItem(CLE);}catch(e){}
+  document.getElementById('vue-planning').classList.add('hidden');
+  document.getElementById('vue-login').classList.remove('hidden');
+  document.getElementById('code').value=""; document.getElementById('msg-login').textContent="";
 }
 
-function resoudre(){
-  const pin=document.getElementById('pin').value.trim();
-  const mag=document.getElementById('mag'), steps=document.getElementById('steps');
-  const send=document.getElementById('btn-send');
-  const code=PINS[pin];
-  document.getElementById('msg').textContent="";
-  if(code){
-    mag.textContent="Magasin : "+code; mag.style.color="#2e7d32";
-    steps.classList.add('on'); send.disabled=false; majOuvrir();
-  } else {
-    mag.textContent = pin.length===4 ? "Code inconnu." : ""; mag.style.color="#c62828";
-    steps.classList.remove('on'); send.disabled=true;
-  }
+async function connexion(){
+  const btn=document.getElementById('btn-login'), msg=document.getElementById('msg-login');
+  const magasin=document.getElementById('magasin').value;
+  const code=document.getElementById('code').value.trim();
+  if(!magasin){ msg.textContent="Choisissez votre magasin."; msg.style.color="#c62828"; return; }
+  if(!code){ msg.textContent="Saisissez votre code."; msg.style.color="#c62828"; return; }
+  btn.disabled=true; msg.textContent="Connexion…"; msg.style.color="#55505e";
+  try{
+    const res=await fetch(AUTH_URL,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ role:"DIR", magasin, code })});
+    const d=await res.json().catch(()=>({}));
+    if(d && d.ok){
+      SESSION={ token:d.token, magasin:d.magasin, expire:d.expire };
+      try{localStorage.setItem(CLE,JSON.stringify(SESSION));}catch(e){}
+      montrerPlanning();
+    } else if(d && d.error==="verrouille"){
+      msg.textContent="Trop d'essais. Réessayez dans "+(d.minutes||15)+" min."; msg.style.color="#c62828";
+    } else {
+      msg.textContent="Magasin ou code incorrect."; msg.style.color="#c62828";
+    }
+  }catch(e){ msg.textContent="Erreur réseau — réessayez."; msg.style.color="#c62828"; }
+  finally{ btn.disabled=false; }
+}
+
+function majOuvrir(){
+  if(!SESSION) return;
+  const annee=document.getElementById('annee').value;
+  const fichier=`${SESSION.magasin}-Planning apprentis ${annee}.xlsx`;
+  document.getElementById('btn-open').href=ONEDRIVE_BASE+encodeURIComponent(fichier)+"?web=1";
 }
 
 async function envoyer(){
   const btn=document.getElementById('btn-send'), msg=document.getElementById('msg');
-  const magasin=codeCourant();
+  if(!SESSION){ deconnexion(); return; }
   const mois=document.getElementById('mois').value;
   const annee=document.getElementById('annee').value;
-  if(!magasin) return;
   btn.disabled=true; msg.textContent="Envoi en cours…"; msg.style.color="#55505e";
   try{
-    const res=await fetch(WEBHOOK,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ magasin, mois, annee, token:TOKEN })});
-    if(res.ok){ msg.textContent="✓ Planning "+annee+" envoyé au RH."; msg.style.color="#2e7d32"; }
-    else if(res.status===401){ msg.textContent="Accès refusé."; msg.style.color="#c62828"; btn.disabled=false; }
-    else { const d=await res.json().catch(()=>({})); msg.textContent=(d.message||"Erreur lors de l'envoi."); msg.style.color="#c62828"; btn.disabled=false; }
-  }catch(e){ msg.textContent="Erreur réseau — réessayez."; msg.style.color="#c62828"; btn.disabled=false; }
+    const res=await fetch(SEND_URL,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ token:SESSION.token, mois, annee })});
+    const d=await res.json().catch(()=>({}));
+    if(res.ok && (!d.status || d.status==="ok")){
+      msg.textContent="✓ Planning "+annee+" envoyé au RH."; msg.style.color="#2e7d32";
+    } else if(res.status===401){
+      msg.textContent="Session expirée — reconnectez-vous."; msg.style.color="#c62828"; setTimeout(deconnexion,1500);
+    } else {
+      msg.textContent=(d.message||"Envoi impossible."); msg.style.color="#c62828";
+    }
+  }catch(e){ msg.textContent="Erreur réseau — réessayez."; msg.style.color="#c62828"; }
+  finally{ btn.disabled=false; }
 }
 </script>
 </body>
